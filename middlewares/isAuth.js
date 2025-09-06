@@ -1,21 +1,58 @@
-import jwt from "jsonwebtoken"
-const isAuth = async(req, res, next) => {
+// import jwt from "jsonwebtoken"
+// const isAuth = async(req, res, next) => {
+//     try {
+//         const token = req.cookies.token;
+//         if(!token){
+//             return res.status(400).json({message:"User not logged in"});
+//         }
+
+//         const decoded =  jwt.verify(token, process.env.JWT_SECRET);
+//         req.userId = decoded.userId;
+//         next();
+
+//     } catch (error) {
+        
+
+//         res.status(500).json({message:"Authentication failed"});
+//     }
+// }
+
+
+// export default isAuth
+
+
+
+
+
+
+
+
+
+
+
+import jwt from "jsonwebtoken";
+
+const isAuth = (req, res, next) => {
     try {
         const token = req.cookies.token;
         if(!token){
-            return res.status(400).json({message:"User not logged in"});
+            return res.status(401).json({message:"User not logged in"});
         }
 
-        const decoded =  jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = decoded.userId;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        
+        req.userId = decoded.userId || decoded.id;
+
         next();
 
     } catch (error) {
-        
-
-        res.status(500).json({message:"Authentication failed"});
+        return res.status(401).json({message:"Invalid or expired token"});
     }
 }
 
+export default isAuth;
 
-export default isAuth
+
+
+

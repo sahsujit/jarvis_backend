@@ -26,10 +26,11 @@ const signUp = async(req, res) =>{
         res.cookie("token", token,{
             httpOnly: true,
             maxAge: 15*24*60*60*1000,
-            sameSite:"strict",
+            sameSite:"lax",
             secure: false
         })
-        res.status(200).json(user,{message:"User created successfully"});
+        res.status(200).json({user, message: "User created successfully"});
+
         
     } catch (error) {
         res.status(500).json({message:"Something went wrong while signing up"});
@@ -57,10 +58,11 @@ const Login = async(req, res) =>{
         res.cookie("token", token,{
             httpOnly: true,
             maxAge: 15*24*60*60*1000,
-            sameSite:"strict",
+            sameSite:"lax",
             secure: false
         })
-        res.status(200).json(user,{message:"User logged in successfully"});
+       res.status(200).json({user, message: "User logged in successfully"});
+
         
     } catch (error) {
         res.status(500).json({message:"Something went wrong while logging in"});
