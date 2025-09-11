@@ -90,7 +90,36 @@ const geminiResponse = async (command, assistantName, userName) => {
   try {
     const geminiUrl = process.env.GEMINI_API_URL;
 
-    const prompt = `
+
+
+
+
+       
+
+
+//     const prompt = `
+
+
+// You are a virtual assistant named ${assistantName} created by ${userName}.
+// Respond ONLY with a JSON object in this format:
+
+// {
+//   "type": "general" | "google_search" | "youtube_search" | "youtube_play" |
+//            "get_time" | "get_date" | "get_day" | "get_month" | "calculator_open" |
+//            "instagram_open" | "facebook_open" | "weather_show",
+//   "userInput": "<original user input>",
+//   "response": "<short voice-friendly reply>"
+// }
+
+// Now your userInput → ${command}
+//     `;
+
+
+
+
+
+
+const prompt = `
 You are a virtual assistant named ${assistantName} created by ${userName}.
 Respond ONLY with a JSON object in this format:
 
@@ -98,12 +127,14 @@ Respond ONLY with a JSON object in this format:
   "type": "general" | "google_search" | "youtube_search" | "youtube_play" |
            "get_time" | "get_date" | "get_day" | "get_month" | "calculator_open" |
            "instagram_open" | "facebook_open" | "weather_show",
-  "userInput": "<original user input>",
+  "userInput": "<cleaned user input without your name>",
   "response": "<short voice-friendly reply>"
 }
 
 Now your userInput → ${command}
-    `;
+**Important:** Remove any mention of your name (${assistantName}) from the userInput field. Only include the actual command the user wants.
+`;
+
 
     const result = await axios.post(geminiUrl, {
       contents: [
