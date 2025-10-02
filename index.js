@@ -10,7 +10,7 @@ import geminiResponse from "./gemini.js";
 dotenv.config();
 
 const app = express();
-app.use(cors({credentials: true, origin: "http://localhost:5173"}))
+app.use(cors({credentials: true, origin: "https://jarvis-frontend-six.vercel.app"}))
 const port = process.env.PORT || 5000;
 app.use (express.json())
 app.use(cookieParser())
