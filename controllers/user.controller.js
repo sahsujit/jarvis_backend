@@ -1,56 +1,3 @@
-// import User from "../models/user.model.js";
-// import uploadOnCloudinary from "../config/cloudinary.js";
-// const getCurrentUser = async (req, res) => {
-//   try {
-//     const userId = req.userId;
-//     const user = await User.findById(userId).select("-password");
-//     if (!user) {
-//       return res.status(400).json({ message: "User not found" });
-//     }
-//     res.status(200).json(user);
-//   } catch (error) {}
-// };
-
-// const updateAssistant = async (req, res) => {
-//   try {
-//     const { imageUrl, assistantName } = req.body;
-//     let assistantImage;
-//     if (req.file) {
-//       assistantImage = await uploadOnCloudinary(req.file.path);
-//     } else {
-//       assistantImage = imageUrl;
-//     }
-
-//     const user = await User.findById(
-//       req.userId,
-//       {
-//         assistantName,
-//         assistantImage,
-//       },
-//       { new: true }
-//     ).select("-password");
-//     if (!user) {
-//       return res.status(400).json({ message: "User not found" });
-//     }
-//     res.status(200).json({user, message: "Assistant updated successfully" });
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .json({ message: "Something went wrong while updating assistant" });
-//   }
-// };
-
-// export { getCurrentUser, updateAssistant };
-
-
-
-
-
-
-
-
-
-
 
 import User from "../models/user.model.js";
 import uploadOnCloudinary from "../config/cloudinary.js";
@@ -67,6 +14,10 @@ const getCurrentUser = async (req, res) => {
     res.status(500).json({ message: "Something went wrong while fetching user" });
   }
 };
+
+
+
+
 
 const updateAssistant = async (req, res) => {
   try {
@@ -99,119 +50,42 @@ const updateAssistant = async (req, res) => {
 
 
 
-// const askToAssistant = async(req, res)=>{
-// try {
 
-//   const {command} = req.body
-//   const user = await User.findById(req.userId).select("-password");
-
-//   const assistantName = user.assistantName;
-//   const userName = user.name;
-
-//   const response = await geminiResponse(command, assistantName, userName);
-//   const jsonMatch = response.match(/{[\s\s]*}/);
-
-//   if(!jsonMatch){
-//     return res.status(400).json({response:"sorry, I can't understand you"});
-//   }
-
-//   const gemResult = JSON.parse(jsonMatch[0]);
-//   const type = gemResult.type;
-
-//   switch (type) {
-//     case 'get_date':
-//       return res.json({
-//         type,
-//         userInput:gemResult.userInput,
-//         response:`Today is ${moment().format("dddd, MMMM Do YYYY")}`
-//       });
-
-
-      
-//     case 'get_time':
-//       return res.json({
-//         type,
-//         userInput:gemResult.userInput,
-//         response:`The time is ${moment().format("h:mm:ss A")}`
-//       });
-
-      
-//     case 'get_day':
-//       return res.json({
-//         type,
-//         userInput:gemResult.userInput,
-//         response:`Today is ${moment().format("dddd")}`
-//       });
-
-//     case 'get_month':
-//       return res.json({
-//         type,
-//         userInput:gemResult.userInput,
-//         response:`The month is ${moment().format("MMMM")}`
-//       });
-
-//       case 'google_search':
-//         case 'youtube_search':
-//         case 'youtube_play':
-//         case 'general':
-//         case 'calculator_open':
-//         case 'instagram_open':
-//         case 'facebook_open':
-//         case 'weather_show':
-//         return res.json({
-//           type,
-//           userInput:gemResult.userInput,
-//           response:gemResult.response
-//         });
-  
-//     default:
-//       return res.status(400).json({response:"I don't understand what you want to do"});
-//   }
-
-// } catch (error) {
-//   return res.status(500).json({response:"Something went wrong while processing your request"});
-// }
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- const askToAssistant = async (req, res) => {
+const askToAssistant = async (req, res) => {
   try {
     const { command } = req.body;
 
     // Fetch user
     const user = await User.findById(req.userId).select("-password");
+    if (!user) return res.status(404).json({ response: "User not found" });
+
+    // Save command to user history
+    if (!user.history) user.history = [];
+    user.history.push(command);
+    await user.save();
+
     const assistantName = user.assistantName || "Assistant";
     const userName = user.name || "User";
 
-    // Get Gemini response
-    const gemResult = await geminiResponse(command, assistantName, userName);
+    // Clean command: remove assistant name
+    const cleanedCommand = command
+      .replace(new RegExp(`\\b${assistantName}\\b`, "gi"), "")
+      .trim();
+
+    // Get Gemini response dynamically
+    const gemResult = await geminiResponse(cleanedCommand, assistantName, userName);
 
     if (!gemResult) {
-      return res.json({
-        type: "general",
-        userInput: command,
-        response: "Sorry, I couldn't understand your request",
+      return res.status(500).json({
+        response: "Sorry, I couldn’t process that request right now.",
       });
     }
 
-    const { type, userInput, response } = gemResult;
+    const type = gemResult.type || "general";
+    const userInput = gemResult.userInput || cleanedCommand;
+    const response = gemResult.response || "Sorry, I couldn't understand your request";
 
+    // Handle special types
     switch (type) {
       case "get_date":
         return res.json({
@@ -219,48 +93,27 @@ const updateAssistant = async (req, res) => {
           userInput,
           response: `Today is ${moment().format("dddd, MMMM Do YYYY")}`,
         });
-
       case "get_time":
         return res.json({
           type,
           userInput,
           response: `The time is ${moment().format("h:mm:ss A")}`,
         });
-
       case "get_day":
         return res.json({
           type,
           userInput,
           response: `Today is ${moment().format("dddd")}`,
         });
-
       case "get_month":
         return res.json({
           type,
           userInput,
           response: `The month is ${moment().format("MMMM")}`,
         });
-
-      case "google_search":
-      case "youtube_search":
-      case "youtube_play":
-      case "general":
-      case "calculator_open":
-      case "instagram_open":
-      case "facebook_open":
-      case "weather_show":
-        return res.json({
-          type,
-          userInput,
-          response,
-        });
-
       default:
-        return res.json({
-          type: "general",
-          userInput,
-          response: "Sorry, I couldn't understand your request",
-        });
+        // Return Gemini response dynamically for any other query
+        return res.json({ type, userInput, response });
     }
   } catch (error) {
     console.error("askToAssistant error:", error);
@@ -269,7 +122,6 @@ const updateAssistant = async (req, res) => {
     });
   }
 };
-
 
 
 
